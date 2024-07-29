@@ -1,4 +1,4 @@
 #!/bin/bash
 
 cargo component build
-wasmtime run -S http ./target/wasm32-wasi/debug/playground-wstd.wasm
+wasmtime run -S http ./target/wasm32-wasip1/debug/playground-wstd.wasm
