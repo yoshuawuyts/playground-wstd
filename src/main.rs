@@ -5,7 +5,7 @@ use std::borrow::Cow;
 use wstd::http::{self, Body, Client, Response};
 use wstd::http::{Headers, Request};
 use wstd::iter::AsyncIterator;
-use wstd::runtime::block_on;
+use wstd::runtime::{block_on, Reactor};
 
 mod schema;
 
@@ -15,7 +15,7 @@ fn main() -> Result<(), Error> {
     block_on(|reactor| async move {
         let client = http::Client::new(&reactor);
         // example(&client).await?;
-        ollama(&client).await?;
+        infer(&reactor, Model::Llama3_1_8b, "1 + 1").await?;
         Ok(())
     })
 }
@@ -28,17 +28,31 @@ async fn example(client: &Client<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-async fn ollama(client: &Client<'_>) -> Result<(), Error> {
+#[non_exhaustive]
+enum Model {
+    Llama3_1_8b,
+}
+
+async fn infer(reactor: &Reactor, model: Model, query: &str) -> Result<(), Error> {
+    let client = http::Client::new(&reactor);
+    let res = match model {
+        Model::Llama3_1_8b => ollama(&client, "llama3.1:8b", query).await?,
+    };
+    println!("{res}");
+    Ok(())
+}
+
+async fn ollama(client: &Client<'_>, model: &str, query: &str) -> Result<String, Error> {
     let req = Request::new(
         http::Method::Post,
         "http://localhost:11434/api/chat".parse()?,
     );
 
     let body = schema::Request {
-        model: "llama3.1:8b".to_string(),
+        model: model.to_string(),
         messages: vec![schema::Message {
             role: schema::Role::User,
-            content: "1 + 1".to_string(),
+            content: query.to_string(),
         }],
         stream: false,
     };
@@ -48,8 +62,7 @@ async fn ollama(client: &Client<'_>) -> Result<(), Error> {
 
     let output = read_to_end(&mut res).await?;
     let response: schema::Response = serde_json::from_slice(&output)?;
-    println!("{response:?}");
-    Ok(())
+    Ok(response.message.content)
 }
 
 async fn read_to_end<B: Body>(mut res: &mut Response<B>) -> Result<Vec<u8>, Error> {
