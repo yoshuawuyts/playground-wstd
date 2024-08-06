@@ -7,25 +7,22 @@ use wstd::http::{Headers, Request};
 use wstd::iter::AsyncIterator;
 use wstd::runtime::{block_on, Reactor};
 
+mod bindings;
 mod schema;
 
 type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
 
-fn main() -> Result<(), Error> {
-    block_on(|reactor| async move {
-        let client = http::Client::new(&reactor);
-        // example(&client).await?;
-        infer(&reactor, Model::Llama3_1_8b, "1 + 1").await?;
-        Ok(())
-    })
+struct Component{
 }
 
-async fn example(client: &Client<'_>) -> Result<(), Error> {
-    let req = Request::new(http::Method::Get, "http://example.com".parse()?);
-    let res = client.send(req).await?;
-    println!("{}", res.status_code());
-    println!("{:#?}", res.headers());
-    Ok(())
+impl bindings::exports::yosh::llm::llm::Guest for Component {
+    fn infer(
+        model: bindings::exports::yosh::llm::llm::InferencingModel,
+        prompt: String,
+        params: Option<bindings::exports::yosh::llm::llm::InferencingParams>,
+    ) -> Result<bindings::exports::yosh::llm::llm::InferencingResult, bindings::exports::yosh::llm::llm::Error> {
+        todo!()
+    }
 }
 
 #[non_exhaustive]
